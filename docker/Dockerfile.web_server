@@ -9,6 +9,12 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 COPY src ./src
+COPY alembic.ini ./
 ENV PYTHONPATH=/app/src
 
-CMD ["uv", "run", "python", "src/web_server/main.py"]
+RUN adduser --disabled-password --gecos "" appuser \
+    && mkdir -p /home/appuser/.cache/uv \
+    && chown -R appuser:appuser /home/appuser
+USER appuser
+
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]

@@ -1,0 +1,443 @@
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #000000);
+    --hint: var(--tg-theme-hint-color, #999999);
+    --link: var(--tg-theme-link-color, #2678b6);
+    --btn: var(--tg-theme-button-color, #2678b6);
+    --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    --header-bg: var(--tg-theme-header-bg-color, #2678b6);
+    --section-bg: var(--tg-theme-section-bg-color, var(--bg));
+    --section-header: var(--tg-theme-section-header-text-color, var(--hint));
+    --subtitle: var(--tg-theme-subtitle-text-color, var(--hint));
+    --destructive: var(--tg-theme-destructive-text-color, #e53935);
+
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --nav-height: 64px;
+
+    /* Chart colors */
+    --chart-calories: #ff6b6b;
+    --chart-protein: #4ecdc4;
+    --chart-fat: #ffe66d;
+    --chart-carbs: #95e1d3;
+    --chart-weight: var(--link);
+    --chart-workout: var(--btn);
+}
+
+/* Dark theme fallback for browser testing (when not inside Telegram) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: var(--tg-theme-bg-color, #1c1c1e);
+        --text: var(--tg-theme-text-color, #f2f2f7);
+        --hint: var(--tg-theme-hint-color, #8e8e93);
+        --link: var(--tg-theme-link-color, #64d2ff);
+        --btn: var(--tg-theme-button-color, #0a84ff);
+        --btn-text: var(--tg-theme-button-text-color, #ffffff);
+        --secondary-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
+        --header-bg: var(--tg-theme-header-bg-color, #1c1c1e);
+        --section-bg: var(--tg-theme-section-bg-color, #2c2c2e);
+        --section-header: var(--tg-theme-section-header-text-color, #8e8e93);
+        --subtitle: var(--tg-theme-subtitle-text-color, #8e8e93);
+        --destructive: var(--tg-theme-destructive-text-color, #ff453a);
+        --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--secondary-bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: calc(var(--nav-height) + 16px);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Pages ===== */
+.page {
+    display: none;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+}
+.page.active { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Cards ===== */
+.card {
+    background: var(--section-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.card-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+.card-subtitle {
+    font-size: 13px;
+    color: var(--subtitle);
+}
+
+/* ===== Section Headers ===== */
+.section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--section-header);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 4px 8px;
+}
+
+/* ===== Progress Bars ===== */
+.progress-container {
+    margin-bottom: 12px;
+}
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+.progress-bar {
+    height: 8px;
+    background: var(--secondary-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.progress-fill.calories { background: var(--chart-calories); }
+.progress-fill.protein { background: var(--chart-protein); }
+.progress-fill.fat { background: var(--chart-fat); }
+.progress-fill.carbs { background: var(--chart-carbs); }
+
+/* ===== Buttons ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: 0.7; }
+
+.btn-primary {
+    background: var(--btn);
+    color: var(--btn-text);
+    width: 100%;
+}
+.btn-secondary {
+    background: var(--secondary-bg);
+    color: var(--text);
+}
+.btn-danger {
+    background: none;
+    color: var(--destructive);
+    padding: 6px;
+}
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* ===== Period Selector ===== */
+.period-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.period-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--secondary-bg);
+    color: var(--hint);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.period-btn.active {
+    background: var(--btn);
+    color: var(--btn-text);
+}
+
+/* ===== Chart Container ===== */
+.chart-container {
+    position: relative;
+    height: 200px;
+    margin: 8px 0;
+}
+.chart-container canvas {
+    max-height: 200px;
+}
+
+/* ===== Bottom Navigation ===== */
+#bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-height);
+    background: var(--section-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: var(--hint);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 8px 12px;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.nav-btn.active { color: var(--btn); }
+.nav-btn svg { width: 22px; height: 22px; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: flex-end;
+    z-index: 200;
+    animation: fadeIn 0.15s ease;
+}
+.modal-overlay.hidden { display: none; }
+
+.modal {
+    width: 100%;
+    max-height: 85vh;
+    background: var(--section-bg);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 20px 16px 32px;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.modal-header h3 { font-size: 17px; font-weight: 600; }
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--hint);
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* ===== Form Elements ===== */
+.form-group {
+    margin-bottom: 14px;
+}
+.form-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--subtitle);
+    margin-bottom: 6px;
+}
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--secondary-bg);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--btn);
+}
+
+/* ===== Food Entry Item ===== */
+.food-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--secondary-bg);
+}
+.food-item:last-child { border-bottom: none; }
+.food-item-info h4 {
+    font-size: 14px;
+    font-weight: 500;
+}
+.food-item-info p {
+    font-size: 12px;
+    color: var(--subtitle);
+    margin-top: 2px;
+}
+.food-item-calories {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--chart-calories);
+    white-space: nowrap;
+}
+
+/* ===== Workout Items ===== */
+.workout-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--secondary-bg);
+}
+.workout-item:last-child { border-bottom: none; }
+.workout-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.workout-item h4 {
+    font-size: 14px;
+    font-weight: 500;
+}
+.workout-set {
+    display: flex;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--subtitle);
+}
+
+/* ===== Profile Stats ===== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.stat-item {
+    background: var(--secondary-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+}
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--subtitle);
+    margin-top: 2px;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--hint);
+}
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* ===== Loading ===== */
+.loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--hint);
+    font-size: 14px;
+}
+
+/* ===== Macros Row ===== */
+.macros-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+.macro-chip {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    background: var(--secondary-bg);
+}
+.macro-chip .value {
+    font-size: 16px;
+    font-weight: 600;
+}
+.macro-chip .label {
+    font-size: 11px;
+    color: var(--subtitle);
+}
+.macro-chip.protein .value { color: var(--chart-protein); }
+.macro-chip.fat .value { color: var(--chart-fat); }
+.macro-chip.carbs .value { color: var(--chart-carbs); }
+
+/* ===== Toast ===== */
+.toast {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--section-bg);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 300;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    pointer-events: none;
+}
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
