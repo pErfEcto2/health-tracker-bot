@@ -76,7 +76,7 @@ async def security_headers(request: Request, call_next):
         "max-age=31536000; includeSubDomains"
     )
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; "
         "style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.telegram.org; "
         "img-src 'self' data:; frame-ancestors https://*.telegram.org"
     )
