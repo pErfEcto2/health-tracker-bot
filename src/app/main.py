@@ -77,7 +77,7 @@ async def security_headers(request: Request, call_next):
     )
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; connect-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.telegram.org; "
         "img-src 'self' data:; frame-ancestors https://*.telegram.org"
     )
     return response
