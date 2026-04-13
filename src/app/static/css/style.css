@@ -761,3 +761,22 @@ body {
     width: 100%;
     margin-bottom: 8px;
 }
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+.quick-btn {
+    padding: 12px 8px;
+    background: var(--secondary-bg);
+    color: var(--text);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.quick-btn:hover { filter: brightness(0.97); }

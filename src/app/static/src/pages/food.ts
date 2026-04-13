@@ -100,7 +100,12 @@ function foodRow(r: DecryptedRecord<FoodEntryPayload>): string {
   `;
 }
 
-function openAddFoodModal(mealType: MealType): void {
+export function openAddFoodModal(mealType: MealType, date?: string, onAdded?: () => void): void {
+  const effectiveDate = date ?? currentDate;
+  openAddFoodModalImpl(mealType, effectiveDate, onAdded ?? (() => { void render(); }));
+}
+
+function openAddFoodModalImpl(mealType: MealType, effectiveDate: string, onAdded: () => void): void {
   const body = openModal(`Добавить: ${MEAL_LABELS[mealType]}`, `
     <div class="add-food-form">
       <input type="text" id="food-search" placeholder="Название продукта" autocomplete="off">
@@ -143,7 +148,7 @@ function openAddFoodModal(mealType: MealType): void {
         resultsBox.querySelectorAll<HTMLButtonElement>(".search-result").forEach((btn) => {
           btn.addEventListener("click", () => {
             const idx = Number(btn.dataset.idx);
-            openQuantityModal(items[idx]!, mealType);
+            openQuantityModal(items[idx]!, mealType, effectiveDate, onAdded);
           });
         });
       } catch (err) { toast((err as Error).message); }
@@ -167,15 +172,15 @@ function openAddFoodModal(mealType: MealType): void {
       logged_at: new Date().toISOString(),
     };
     try {
-      await createRecord("food_entry", currentDate, payload);
+      await createRecord("food_entry", effectiveDate, payload);
       closeModal();
       toast("Добавлено");
-      void render();
+      onAdded();
     } catch (err) { toast((err as Error).message); }
   });
 }
 
-function openQuantityModal(item: FoodSearchItem, mealType: MealType): void {
+function openQuantityModal(item: FoodSearchItem, mealType: MealType, effectiveDate: string, onAdded: () => void): void {
   const body = openModal(`Сколько: ${item.name}`, `
     <form id="qty-form" class="auth-form">
       <p class="hint">На 100г: ${item.calories_per_100g} ккал • Б ${item.protein_per_100g} / Ж ${item.fat_per_100g} / У ${item.carbs_per_100g}</p>
@@ -201,10 +206,10 @@ function openQuantityModal(item: FoodSearchItem, mealType: MealType): void {
       logged_at: new Date().toISOString(),
     };
     try {
-      await createRecord("food_entry", currentDate, payload);
+      await createRecord("food_entry", effectiveDate, payload);
       closeModal();
       toast("Добавлено");
-      void render();
+      onAdded();
     } catch (err) { toast((err as Error).message); }
   });
 }

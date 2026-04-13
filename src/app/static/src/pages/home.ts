@@ -1,10 +1,11 @@
-import { listRecords } from "../records";
-import { navigate } from "../router";
 import { bottomNavHtml, wireNav } from "../nav";
+import { createRecord, listRecords } from "../records";
+import { navigate } from "../router";
 import { hasDek } from "../session";
 import { calcTDEE, isoDaysAgo, latestWeight, sumFood, sumWater, today } from "../stats";
-import type { FoodEntryPayload, MeasurementPayload, ProfilePayload, WaterEntryPayload } from "../types";
-import { mount } from "../ui";
+import type { FoodEntryPayload, MealType, MeasurementPayload, ProfilePayload, WaterEntryPayload } from "../types";
+import { mount, toast } from "../ui";
+import { openAddFoodModal } from "./food";
 
 export async function render(): Promise<void> {
   if (!hasDek()) { navigate("login"); return; }
@@ -49,6 +50,18 @@ export async function render(): Promise<void> {
       </div>
 
       <div class="card">
+        <h2>Быстрое добавление</h2>
+        <div class="quick-actions">
+          <button class="quick-btn" data-action="food" data-meal="breakfast">🍳 Завтрак</button>
+          <button class="quick-btn" data-action="food" data-meal="lunch">🥗 Обед</button>
+          <button class="quick-btn" data-action="food" data-meal="dinner">🍽 Ужин</button>
+          <button class="quick-btn" data-action="food" data-meal="snack">🍎 Перекус</button>
+          <button class="quick-btn" data-action="water">💧 +250 мл</button>
+          <button class="quick-btn" data-action="weight">⚖️ Вес</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Вода</h2>
         <div class="big-number">${waterTotal} мл</div>
       </div>
@@ -63,4 +76,47 @@ export async function render(): Promise<void> {
     ${bottomNavHtml("home")}
   `);
   wireNav();
+
+  document.querySelectorAll<HTMLButtonElement>(".quick-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleQuickAction(btn));
+  });
 }
+
+function handleQuickAction(btn: HTMLButtonElement): void {
+  const action = btn.dataset.action;
+  if (action === "food") {
+    const meal = btn.dataset.meal as MealType;
+    openAddFoodModal(meal, today(), () => void render());
+  } else if (action === "water") {
+    void addWater();
+  } else if (action === "weight") {
+    openWeightPrompt();
+  }
+}
+
+async function addWater(): Promise<void> {
+  try {
+    await createRecord<WaterEntryPayload>("water_entry", today(), {
+      amount_ml: 250, logged_at: new Date().toISOString(),
+    });
+    toast("+250 мл");
+    void render();
+  } catch (err) { toast((err as Error).message); }
+}
+
+function openWeightPrompt(): void {
+  const input = window.prompt("Вес в кг:");
+  if (input === null) return;
+  const kg = Number(input.replace(",", "."));
+  if (!kg || kg < 20 || kg > 300) { toast("Некорректный вес"); return; }
+  void (async () => {
+    try {
+      await createRecord<MeasurementPayload>("measurement", today(), {
+        weight_kg: kg, measured_at: new Date().toISOString(),
+      });
+      toast(`${kg} кг записан`);
+      void render();
+    } catch (err) { toast((err as Error).message); }
+  })();
+}
+
