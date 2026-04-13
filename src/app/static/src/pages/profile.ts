@@ -4,25 +4,26 @@ import { bottomNavHtml, wireNav } from "../nav";
 import { createRecord, deleteRecord, listRecords, loadProfile, updateRecord } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
-import { activityLabel, calcTDEE, genderLabel, isoDaysAgo, latestWeight, today } from "../stats";
+import { activityLabel, calcTDEE, genderLabel, latestWeight, today } from "../stats";
 import type { ActivityLevel, FoodEntryPayload, Gender, MeasurementPayload, ProfilePayload, WaterEntryPayload, WorkoutSessionPayload } from "../types";
 import { $, mount, toast } from "../ui";
+
+let currentDate = today();
 
 export async function render(): Promise<void> {
   if (!hasDek()) { navigate("login"); return; }
 
-  const sevenAgo = isoDaysAgo(7);
-  const t = today();
-
-  const [profileRec, measurements, waters] = await Promise.all([
+  const [profileRec, measurementsDay, watersDay, measurementsAll] = await Promise.all([
     loadProfile<ProfilePayload>({}),
+    listRecords<MeasurementPayload>({ type: "measurement", from: currentDate, to: currentDate }),
+    listRecords<WaterEntryPayload>({ type: "water_entry", from: currentDate, to: currentDate }),
     listRecords<MeasurementPayload>({ type: "measurement" }),
-    listRecords<WaterEntryPayload>({ type: "water_entry", from: sevenAgo, to: t }),
   ]);
 
   const profile = profileRec.payload;
   const tdee = calcTDEE(profile);
-  const weight = latestWeight(measurements.map((m) => m.payload));
+  const weight = latestWeight(measurementsAll.map((m) => m.payload));
+  const waterTotalMl = watersDay.reduce((a, w) => a + (w.payload.amount_ml || 0), 0);
 
   mount(`
     <div class="shell">
@@ -47,22 +48,30 @@ export async function render(): Promise<void> {
 
       <div class="card">
         <div class="card-header">
-          <h2>Замеры</h2>
-          <button id="add-measurement-btn" class="text-btn">+ Добавить</button>
+          <h2>Журнал</h2>
+          <input type="date" id="prof-date" value="${currentDate}" class="date-input">
         </div>
-        ${measurements.length === 0
-          ? `<p class="hint">Замеров нет</p>`
-          : measurements.slice(0, 10).map(measurementRow).join("")}
+        <p class="hint">Замеры и вода за выбранный день</p>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <h2>Вода (7 дней)</h2>
+          <h3>Замеры</h3>
+          <button id="add-measurement-btn" class="text-btn">+ Добавить</button>
+        </div>
+        ${measurementsDay.length === 0
+          ? `<p class="hint">Замеров за этот день нет</p>`
+          : measurementsDay.map(measurementRow).join("")}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Вода — ${waterTotalMl} мл</h3>
           <button id="add-water-btn" class="text-btn">+ 250 мл</button>
         </div>
-        ${waters.length === 0
+        ${watersDay.length === 0
           ? `<p class="hint">Записей нет</p>`
-          : waters.slice(0, 20).map(waterRow).join("")}
+          : watersDay.map(waterRow).join("")}
       </div>
 
       <div class="card">
@@ -80,6 +89,11 @@ export async function render(): Promise<void> {
 
   wireNav();
 
+  ($("#prof-date") as HTMLInputElement).addEventListener("change", (e) => {
+    currentDate = (e.target as HTMLInputElement).value;
+    void render();
+  });
+
   $("#logout-btn").addEventListener("click", async () => {
     await logout();
     navigate("login");
@@ -91,7 +105,7 @@ export async function render(): Promise<void> {
   $("#add-water-btn").addEventListener("click", async () => {
     const payload: WaterEntryPayload = { amount_ml: 250, logged_at: new Date().toISOString() };
     try {
-      await createRecord("water_entry", today(), payload);
+      await createRecord("water_entry", currentDate, payload);
       toast("+250 мл");
       void render();
     } catch (err) { toast((err as Error).message); }
@@ -240,7 +254,7 @@ function openAddMeasurementModal(): void {
       toast("Введи хотя бы одно значение"); return;
     }
     try {
-      await createRecord("measurement", today(), payload);
+      await createRecord("measurement", currentDate, payload);
       closeModal();
       toast("Сохранено");
       void render();
