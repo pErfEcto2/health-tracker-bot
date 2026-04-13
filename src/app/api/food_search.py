@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/food-search", tags=["food-search"])
 
-CACHE_TTL = 86400  # 24 hours
+CACHE_TTL = 86400
 
 
 @router.get("")
@@ -24,10 +24,8 @@ async def search_food(
 ):
     """Search food: local DB first, then OpenFoodFacts with Redis cache."""
 
-    # 1. Local DB (instant, no API call)
     local = search_local(q)
 
-    # 2. Check Redis cache
     cache_key = f"food_search:{q.lower().strip()}"
     redis = get_redis()
     cached = None
@@ -39,16 +37,12 @@ async def search_food(
     if cached:
         remote = json.loads(cached)
     else:
-        # 3. OpenFoodFacts API (Russian → World fallback)
         remote = await _search_openfoodfacts(q)
-
-        # Cache result (even empty — to avoid repeated failed calls)
         try:
             await redis.set(cache_key, json.dumps(remote, ensure_ascii=False), ex=CACHE_TTL)
         except Exception:
             logger.warning("Redis write failed for food search cache", exc_info=True)
 
-    # Merge: local first, then remote (deduplicate by lowercase name)
     seen = set()
     results = []
     for item in local + remote:
@@ -56,7 +50,6 @@ async def search_food(
         if key in seen:
             continue
         seen.add(key)
-        # Skip items with 0 calories AND 0 macros
         if (item["calories_per_100g"] == 0 and item["protein_per_100g"] == 0
                 and item["fat_per_100g"] == 0 and item["carbs_per_100g"] == 0):
             continue
@@ -66,7 +59,6 @@ async def search_food(
 
 
 async def _search_openfoodfacts(query: str) -> list[dict]:
-    """Search OpenFoodFacts: Russian locale first, then world."""
     for locale in ("ru", "world"):
         results = await _fetch_off(query, locale)
         if results:
@@ -109,7 +101,6 @@ async def _fetch_off(query: str, locale: str) -> list[dict]:
         fat = float(n.get("fat_100g", 0) or 0)
         carbs = float(n.get("carbohydrates_100g", 0) or 0)
 
-        # Estimate calories from macros if reported as 0 but macros exist
         if calories == 0 and (protein > 0 or fat > 0 or carbs > 0):
             calories = round(protein * 4 + fat * 9 + carbs * 4, 1)
 

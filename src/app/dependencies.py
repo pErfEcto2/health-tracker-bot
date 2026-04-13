@@ -1,57 +1,77 @@
 import logging
+from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Cookie, Depends, Header, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.crypto import constant_time_eq, hash_session_token
 from app.database import get_db
-from app.redis import get_redis
+from app.models.session import Session
 from app.models.user import User
-from app.security import validate_init_data
+from app.redis import get_redis
 
 logger = logging.getLogger(__name__)
 
-DEV_USER = {
-    "id": 1,
-    "first_name": "Dev",
-    "last_name": "User",
-    "username": "dev",
-}
+SESSION_COOKIE = "session"
+CSRF_COOKIE = "csrf_token"
+CSRF_HEADER = "X-CSRF-Token"
+SESSION_TTL_DAYS = 7
 
-_dev_mode_warned = False
+
+async def _load_session(
+    token: str | None, db: AsyncSession
+) -> tuple[Session, User] | None:
+    if not token:
+        return None
+    th = hash_session_token(token)
+    result = await db.execute(select(Session).where(Session.token_hash == th))
+    sess = result.scalar_one_or_none()
+    if sess is None:
+        return None
+    now = datetime.now(timezone.utc)
+    if sess.expires_at < now:
+        await db.delete(sess)
+        return None
+    user = await db.get(User, sess.user_id)
+    if user is None:
+        await db.delete(sess)
+        return None
+    # Sliding refresh
+    sess.expires_at = now + timedelta(days=SESSION_TTL_DAYS)
+    return sess, user
 
 
 async def get_current_user(
-    x_telegram_init_data: str = Header(default=""),
+    request: Request,
+    session: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+    csrf_cookie: str | None = Cookie(default=None, alias=CSRF_COOKIE),
+    csrf_header: str | None = Header(default=None, alias=CSRF_HEADER),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Validate Telegram initData and return or create the user."""
-    if settings.DEV_MODE:
-        global _dev_mode_warned
-        if not _dev_mode_warned:
-            logger.warning("DEV_MODE is ON — authentication is disabled!")
-            _dev_mode_warned = True
-        user_data = DEV_USER
-    else:
-        user_data = validate_init_data(x_telegram_init_data)
+    """Authenticate via session cookie. Verify CSRF on state-changing methods."""
+    loaded = await _load_session(session, db)
+    if loaded is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    _, user = loaded
 
-    telegram_id = user_data["id"]
-
-    result = await db.execute(select(User).where(User.telegram_id == telegram_id))
-    user = result.scalar_one_or_none()
-
-    if user is None:
-        user = User(
-            telegram_id=telegram_id,
-            first_name=user_data.get("first_name", ""),
-            last_name=user_data.get("last_name"),
-            username=user_data.get("username"),
-        )
-        db.add(user)
-        await db.flush()
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if not csrf_cookie or not csrf_header or not constant_time_eq(csrf_cookie, csrf_header):
+            raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
 
     return user
+
+
+async def get_current_user_allow_must_change(
+    request: Request,
+    session: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+    csrf_cookie: str | None = Cookie(default=None, alias=CSRF_COOKIE),
+    csrf_header: str | None = Header(default=None, alias=CSRF_HEADER),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Same as get_current_user but does not check must_change_password flag —
+    used for the change-password endpoint itself."""
+    return await get_current_user(request, session, csrf_cookie, csrf_header, db)
 
 
 def rate_limit_endpoint(limit: int = 3, window: int = 60):
