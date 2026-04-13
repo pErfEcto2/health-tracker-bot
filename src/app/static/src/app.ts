@@ -1,9 +1,10 @@
 import { fetchMe } from "./auth";
-import { registerRoute, start } from "./router";
+import { currentRoute, registerRoute, start } from "./router";
 import type { Route } from "./router";
 import { loadProfile } from "./records";
 import { hasDek } from "./session";
 import { isProfileComplete } from "./stats";
+import { installSwipeNav } from "./swipe";
 import type { ProfilePayload } from "./types";
 
 import * as login from "./pages/login";
@@ -54,6 +55,7 @@ async function boot(): Promise<void> {
       setHash("login");
     }
   }
+  installSwipeNav(currentRoute);
   start();
 }
 
