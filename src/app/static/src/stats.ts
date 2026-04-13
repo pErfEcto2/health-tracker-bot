@@ -56,8 +56,8 @@ export function latestWeight(measurements: MeasurementPayload[]): number | null 
 }
 
 export function genderLabel(g: Gender | undefined): string {
-  if (g === "male") return "Male";
-  if (g === "female") return "Female";
+  if (g === "male") return "Мужской";
+  if (g === "female") return "Женский";
   return "—";
 }
 
@@ -68,11 +68,11 @@ export function isProfileComplete(p: ProfilePayload | undefined): boolean {
 
 export function activityLabel(a: ActivityLevel | undefined): string {
   switch (a) {
-    case "sedentary": return "Sedentary";
-    case "light": return "Light";
-    case "moderate": return "Moderate";
-    case "active": return "Active";
-    case "very_active": return "Very active";
+    case "sedentary":   return "Сидячий — почти без движения";
+    case "light":       return "Лёгкая — 1–3 тренировки в неделю";
+    case "moderate":    return "Умеренная — 3–5 тренировок в неделю";
+    case "active":      return "Активный — 6–7 тренировок в неделю";
+    case "very_active": return "Очень активный — 2 раза в день / физический труд";
     default: return "—";
   }
 }
