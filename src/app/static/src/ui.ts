@@ -26,18 +26,19 @@ export function mount(html: string): HTMLElement {
   if (!root) throw new Error("mount target missing");
   root.innerHTML = html;
 
-  // Entry animation is skipped when rendering a preview (it's pre-positioned off-screen).
+  // Entry animation is skipped when rendering a preview, and explicitly suppressed
+  // when navDir="none" (e.g. mid-swipe commit where the transition is already playing).
   if (!_previewMode) {
     const child = root.firstElementChild as HTMLElement | null;
-    if (child) {
-      const dir = document.documentElement.dataset.navDir;
+    const dir = document.documentElement.dataset.navDir;
+    if (child && dir !== "none") {
       child.classList.remove("page-enter", "page-enter-left", "page-enter-right");
       void child.offsetWidth;
       if (dir === "left") child.classList.add("page-enter-left");
       else if (dir === "right") child.classList.add("page-enter-right");
       else child.classList.add("page-enter");
     }
-    delete document.documentElement.dataset.navDir;
+    if (dir !== "none") delete document.documentElement.dataset.navDir;
   }
   return root;
 }

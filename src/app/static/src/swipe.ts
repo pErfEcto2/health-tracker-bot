@@ -1,7 +1,7 @@
 // Interactive swipe navigation: page follows the finger and the adjacent page
 // is live-rendered into #app-preview so the next page is visible during the swipe.
 
-import { navigate, routeHandler } from "./router";
+import { routeHandler } from "./router";
 import type { Route } from "./router";
 import { setMountTarget, setPreviewMode } from "./ui";
 
@@ -126,24 +126,32 @@ export function installSwipeNav(getActive: () => Route): void {
     const next = swipingLeft ? i + 1 : i - 1;
 
     if (Math.abs(dx) >= threshold && next >= 0 && next < NAV_ORDER.length) {
-      const side = swipingLeft ? "left" : "right";
-      const offApp = side === "left" ? -window.innerWidth : window.innerWidth;
+      const target = NAV_ORDER[next]!;
+      const offApp = swipingLeft ? -window.innerWidth : window.innerWidth;
       app.style.transition = "transform 0.2s ease-out";
       app.style.transform = `translate3d(${offApp}px, 0, 0)`;
       preview.style.transition = "transform 0.2s ease-out";
       preview.style.transform = "translate3d(0, 0, 0)";
 
-      const finish = () => {
+      const finish = async () => {
         app.removeEventListener("transitionend", finish);
-        // Reset both containers, then do a real navigate so listeners attach in #app.
+        // #app is off-screen and invisible. Re-render target into #app with full
+        // listeners while preview stays visible at center.
+        const handler = routeHandler(target);
+        if (handler) {
+          // Skip the enter animation — the swipe already placed content.
+          document.documentElement.dataset.navDir = "none";
+          try { await handler(); } catch { /* page render errors surface via toast */ }
+          delete document.documentElement.dataset.navDir;
+        }
+        // Atomically swap: hide preview, show #app at center.
         app.style.transition = "none";
         app.style.transform = "";
         resetPreview();
-        // Suppress the default enter animation since the swipe already moved it in.
-        document.documentElement.dataset.navDir = "";
-        navigate(NAV_ORDER[next]!);
+        // Update hash silently (no re-render loop).
+        window.history.replaceState(null, "", `#/${target}`);
       };
-      app.addEventListener("transitionend", finish);
+      app.addEventListener("transitionend", finish, { once: true });
     } else {
       app.style.transition = "transform 0.18s ease-out";
       app.style.transform = "translate3d(0, 0, 0)";
