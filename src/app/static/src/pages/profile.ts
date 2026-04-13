@@ -1,6 +1,6 @@
 import { deleteAccount, logout } from "../auth";
 import { closeModal, openModal } from "../modal";
-import { bottomNavHtml, wireNav } from "../nav";
+import { syncNav } from "../nav";
 import { listRecords, loadProfile, updateRecord } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
@@ -51,10 +51,9 @@ export async function render(): Promise<void> {
         <button id="delete-account-btn" class="danger-btn">Удалить аккаунт и все данные</button>
       </div>
     </div>
-    ${bottomNavHtml("profile")}
   `);
 
-  wireNav();
+  syncNav("profile");
 
   $("#logout-btn").addEventListener("click", async () => {
     await logout();

@@ -1,7 +1,7 @@
 import { api } from "../api";
 import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
-import { bottomNavHtml, wireNav } from "../nav";
+import { syncNav } from "../nav";
 import { createRecord, deleteRecord, listRecords } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
@@ -46,10 +46,9 @@ export async function render(): Promise<void> {
 
       ${(["breakfast", "lunch", "dinner", "snack"] as MealType[]).map((mt) => mealSection(mt, entries)).join("")}
     </div>
-    ${bottomNavHtml("food")}
   `);
 
-  wireNav();
+  syncNav("food");
   wireDayNav("food-date", currentDate, (d) => { currentDate = d; void render(); });
 
   document.querySelectorAll<HTMLButtonElement>(".add-food-btn").forEach((b) => {

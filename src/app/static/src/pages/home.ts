@@ -1,4 +1,4 @@
-import { bottomNavHtml, wireNav } from "../nav";
+import { syncNav } from "../nav";
 import { createRecord, listRecords } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
@@ -73,9 +73,8 @@ export async function render(): Promise<void> {
         </div>
       ` : ""}
     </div>
-    ${bottomNavHtml("home")}
   `);
-  wireNav();
+  syncNav("home");
 
   document.querySelectorAll<HTMLButtonElement>(".quick-btn").forEach((btn) => {
     btn.addEventListener("click", () => handleQuickAction(btn));

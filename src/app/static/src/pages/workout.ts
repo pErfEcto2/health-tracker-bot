@@ -1,7 +1,7 @@
 import { api } from "../api";
 import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
-import { bottomNavHtml, wireNav } from "../nav";
+import { syncNav } from "../nav";
 import { createRecord, deleteRecord, listRecords, updateRecord } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
@@ -44,10 +44,9 @@ export async function render(): Promise<void> {
         ? `<p class="hint">Тренировок за день нет</p>`
         : sessions.map((s) => sessionCard(s, exercises)).join("")}
     </div>
-    ${bottomNavHtml("workout")}
   `);
 
-  wireNav();
+  syncNav("workout");
   wireDayNav("wk-date", currentDate, (d) => { currentDate = d; void render(); });
 
   $("#new-workout-btn").addEventListener("click", async () => {

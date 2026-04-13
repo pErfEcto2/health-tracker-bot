@@ -1,4 +1,5 @@
 import { fetchMe } from "./auth";
+import { wireNavOnce, syncNav } from "./nav";
 import { currentRoute, registerRoute, start } from "./router";
 import type { Route } from "./router";
 import { loadProfile } from "./records";
@@ -55,7 +56,10 @@ async function boot(): Promise<void> {
       setHash("login");
     }
   }
+  wireNavOnce();
   installSwipeNav(currentRoute);
+  // Auth-only routes should hide the nav.
+  syncNav(currentRoute());
   start();
 }
 

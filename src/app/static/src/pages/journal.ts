@@ -1,6 +1,6 @@
 import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
-import { bottomNavHtml, wireNav } from "../nav";
+import { syncNav } from "../nav";
 import { createRecord, deleteRecord, listRecords } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
@@ -47,10 +47,9 @@ export async function render(): Promise<void> {
           : waters.map(waterRow).join("")}
       </div>
     </div>
-    ${bottomNavHtml("journal")}
   `);
 
-  wireNav();
+  syncNav("journal");
   wireDayNav("j-date", currentDate, (d) => { currentDate = d; void render(); });
 
   $("#add-measurement-btn").addEventListener("click", openAddMeasurementModal);

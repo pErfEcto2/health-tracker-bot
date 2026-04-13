@@ -889,3 +889,40 @@ button:focus-visible,
     will-change: transform;
     touch-action: pan-y;
 }
+
+.hidden { display: none !important; }
+
+#bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    background: var(--section-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid var(--secondary-bg);
+    z-index: 100;
+}
+
+#bottom-nav .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: var(--hint);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 6px 0;
+}
+
+#bottom-nav .nav-btn.active {
+    color: var(--link);
+}
+
+.shell {
+    min-height: calc(100vh - var(--nav-height) - 16px);
+}
