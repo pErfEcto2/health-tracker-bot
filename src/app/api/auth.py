@@ -134,6 +134,19 @@ async def login(
     )
 
 
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    response: Response,
+    user: User = Depends(get_current_user_allow_must_change),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete the authenticated user and all their data (records + sessions cascade)."""
+    await db.delete(user)
+    await db.commit()
+    _clear_auth_cookies(response)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     request: Request,

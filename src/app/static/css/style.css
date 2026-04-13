@@ -826,3 +826,17 @@ button:focus-visible,
     background: var(--btn);
     color: var(--btn-text);
 }
+
+.danger-zone { border: 1px solid var(--destructive); }
+
+.danger-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--destructive);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+}

@@ -114,3 +114,8 @@ export async function logout(): Promise<void> {
   try { await api.post("/auth/logout"); } catch { /* best effort */ }
   clearDek();
 }
+
+export async function deleteAccount(): Promise<void> {
+  await api.del("/auth/account");
+  clearDek();
+}

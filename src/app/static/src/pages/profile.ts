@@ -1,19 +1,23 @@
-import { logout } from "../auth";
+import { deleteAccount, logout } from "../auth";
 import { closeModal, openModal } from "../modal";
 import { bottomNavHtml, wireNav } from "../nav";
-import { createRecord, listRecords, loadProfile, updateRecord } from "../records";
+import { createRecord, deleteRecord, listRecords, loadProfile, updateRecord } from "../records";
 import { navigate } from "../router";
 import { hasDek } from "../session";
-import { activityLabel, calcTDEE, genderLabel, latestWeight, today } from "../stats";
+import { activityLabel, calcTDEE, genderLabel, isoDaysAgo, latestWeight, today } from "../stats";
 import type { ActivityLevel, FoodEntryPayload, Gender, MeasurementPayload, ProfilePayload, WaterEntryPayload, WorkoutSessionPayload } from "../types";
 import { $, mount, toast } from "../ui";
 
 export async function render(): Promise<void> {
   if (!hasDek()) { navigate("login"); return; }
 
-  const [profileRec, measurements] = await Promise.all([
+  const sevenAgo = isoDaysAgo(7);
+  const t = today();
+
+  const [profileRec, measurements, waters] = await Promise.all([
     loadProfile<ProfilePayload>({}),
     listRecords<MeasurementPayload>({ type: "measurement" }),
+    listRecords<WaterEntryPayload>({ type: "water_entry", from: sevenAgo, to: t }),
   ]);
 
   const profile = profileRec.payload;
@@ -48,20 +52,27 @@ export async function render(): Promise<void> {
         </div>
         ${measurements.length === 0
           ? `<p class="hint">Замеров нет</p>`
-          : measurements.slice(0, 10).map((m) => measurementRow(m.payload)).join("")}
+          : measurements.slice(0, 10).map(measurementRow).join("")}
       </div>
 
       <div class="card">
         <div class="card-header">
-          <h2>Вода</h2>
+          <h2>Вода (7 дней)</h2>
           <button id="add-water-btn" class="text-btn">+ 250 мл</button>
         </div>
-        <p class="hint">Добавляй стакан за один клик. Счётчик дня — на главной.</p>
+        ${waters.length === 0
+          ? `<p class="hint">Записей нет</p>`
+          : waters.slice(0, 20).map(waterRow).join("")}
       </div>
 
       <div class="card">
         <h2>Данные</h2>
         <button id="export-btn" class="text-btn">Скачать все данные (расшифровано)</button>
+      </div>
+
+      <div class="card danger-zone">
+        <h2>Опасная зона</h2>
+        <button id="delete-account-btn" class="danger-btn">Удалить аккаунт и все данные</button>
       </div>
     </div>
     ${bottomNavHtml("profile")}
@@ -76,26 +87,80 @@ export async function render(): Promise<void> {
 
   $("#edit-profile-btn").addEventListener("click", () => openEditModal(profileRec.id, profile));
   $("#add-measurement-btn").addEventListener("click", openAddMeasurementModal);
+
   $("#add-water-btn").addEventListener("click", async () => {
     const payload: WaterEntryPayload = { amount_ml: 250, logged_at: new Date().toISOString() };
     try {
       await createRecord("water_entry", today(), payload);
       toast("+250 мл");
+      void render();
     } catch (err) { toast((err as Error).message); }
   });
 
   $("#export-btn").addEventListener("click", exportAllData);
+
+  $("#delete-account-btn").addEventListener("click", async () => {
+    const confirm1 = window.confirm(
+      "Удалить аккаунт и ВСЕ данные безвозвратно? Восстановление невозможно."
+    );
+    if (!confirm1) return;
+    const confirm2 = window.prompt('Напиши "УДАЛИТЬ" для подтверждения:');
+    if (confirm2 !== "УДАЛИТЬ") { toast("Отменено"); return; }
+    try {
+      await deleteAccount();
+      toast("Аккаунт удалён");
+      navigate("login");
+    } catch (err) { toast((err as Error).message); }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(".del-measurement").forEach((b) => {
+    b.addEventListener("click", () => deleteItem(b.dataset.id!, "замер"));
+  });
+  document.querySelectorAll<HTMLButtonElement>(".del-water").forEach((b) => {
+    b.addEventListener("click", () => deleteItem(b.dataset.id!, "запись"));
+  });
 }
 
-function measurementRow(m: MeasurementPayload): string {
+async function deleteItem(id: string, what: string): Promise<void> {
+  if (!confirm(`Удалить ${what}?`)) return;
+  try {
+    await deleteRecord(id);
+    void render();
+  } catch (err) { toast((err as Error).message); }
+}
+
+function measurementRow(r: { id: string; payload: MeasurementPayload }): string {
+  const m = r.payload;
   const parts: string[] = [];
   if (m.weight_kg !== undefined) parts.push(`${m.weight_kg} кг`);
-  if (m.waist_cm !== undefined) parts.push(`талия ${m.waist_cm} см`);
-  if (m.bicep_cm !== undefined) parts.push(`бицепс ${m.bicep_cm} см`);
-  if (m.hip_cm !== undefined) parts.push(`бёдра ${m.hip_cm} см`);
-  if (m.chest_cm !== undefined) parts.push(`грудь ${m.chest_cm} см`);
+  if (m.waist_cm !== undefined) parts.push(`талия ${m.waist_cm}`);
+  if (m.bicep_cm !== undefined) parts.push(`бицепс ${m.bicep_cm}`);
+  if (m.hip_cm !== undefined) parts.push(`бёдра ${m.hip_cm}`);
+  if (m.chest_cm !== undefined) parts.push(`грудь ${m.chest_cm}`);
   const date = new Date(m.measured_at).toLocaleDateString();
-  return `<div class="kv"><span>${date}</span><span>${parts.join(" • ") || "—"}</span></div>`;
+  return `
+    <div class="kv">
+      <span>${date}</span>
+      <span>
+        ${parts.join(" • ") || "—"}
+        <button class="text-btn del-measurement" data-id="${r.id}" aria-label="удалить" style="margin-left:8px">✕</button>
+      </span>
+    </div>
+  `;
+}
+
+function waterRow(r: { id: string; payload: WaterEntryPayload }): string {
+  const dt = new Date(r.payload.logged_at);
+  const label = `${dt.toLocaleDateString()} ${dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+  return `
+    <div class="kv">
+      <span>${label}</span>
+      <span>
+        ${r.payload.amount_ml} мл
+        <button class="text-btn del-water" data-id="${r.id}" aria-label="удалить" style="margin-left:8px">✕</button>
+      </span>
+    </div>
+  `;
 }
 
 function openEditModal(id: string, profile: ProfilePayload): void {
