@@ -14,8 +14,12 @@ export function wireNavOnce(): void {
   });
 }
 
-/** Show nav and set active button for the given main route. Hide for auth pages. */
+import { isPreviewMode } from "./ui";
+
+/** Show nav and set active button for the given main route. Hide for auth pages.
+ *  No-op when called during a preview render (to keep active state on the real page). */
 export function syncNav(active: Route): void {
+  if (isPreviewMode()) return;
   const nav = document.getElementById("bottom-nav");
   if (!nav) return;
   const isMain = (MAIN_ROUTES as readonly Route[]).includes(active);

@@ -926,3 +926,27 @@ button:focus-visible,
 .shell {
     min-height: calc(100vh - var(--nav-height) - 16px);
 }
+
+#app-viewport {
+    position: relative;
+    overflow: hidden;
+}
+
+#app, #app-preview {
+    position: relative;
+    will-change: transform;
+}
+
+#app-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: auto;
+}
+
+#app-preview:empty {
+    display: none;
+}

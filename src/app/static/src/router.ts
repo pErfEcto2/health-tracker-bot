@@ -21,6 +21,10 @@ export function registerRoute(route: Route, handler: RouteHandler): void {
   handlers[route] = handler;
 }
 
+export function routeHandler(route: Route): RouteHandler | undefined {
+  return handlers[route];
+}
+
 export function currentRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   const r = hash.split("?")[0] as Route;
