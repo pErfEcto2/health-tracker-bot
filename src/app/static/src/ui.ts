@@ -1,5 +1,8 @@
 // Tiny DOM helpers. No framework.
 
+import { isMainRoute } from "./carousel";
+import { currentRoute } from "./router";
+
 let _altTarget: HTMLElement | null = null;
 let _previewMode = false;
 
@@ -21,8 +24,17 @@ export function $(sel: string, root: ParentNode = document): HTMLElement {
   return el as HTMLElement;
 }
 
+function defaultTarget(): HTMLElement | null {
+  const r = currentRoute();
+  if (isMainRoute(r)) {
+    const slide = document.getElementById(`slide-${r}`);
+    if (slide) return slide;
+  }
+  return document.getElementById("app");
+}
+
 export function mount(html: string): HTMLElement {
-  const root = _altTarget ?? document.getElementById("app");
+  const root = _altTarget ?? defaultTarget();
   if (!root) throw new Error("mount target missing");
   root.innerHTML = html;
 

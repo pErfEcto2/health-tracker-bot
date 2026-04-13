@@ -950,3 +950,29 @@ button:focus-visible,
 #app-preview:empty {
     display: none;
 }
+
+/* Carousel */
+#carousel {
+    width: 100%;
+    overflow: hidden;
+}
+
+#slides {
+    display: flex;
+    width: 500vw;
+    will-change: transform;
+}
+
+.slide {
+    width: 100vw;
+    flex-shrink: 0;
+    overflow-x: hidden;
+}
+
+.slide:empty::before {
+    content: "...";
+    display: block;
+    text-align: center;
+    padding: 40px;
+    color: var(--hint);
+}
