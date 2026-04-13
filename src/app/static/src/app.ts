@@ -1,5 +1,6 @@
 import { fetchMe } from "./auth";
-import { navigate, registerRoute, start } from "./router";
+import { registerRoute, start } from "./router";
+import type { Route } from "./router";
 import { hasDek } from "./session";
 
 import * as login from "./pages/login";
@@ -18,17 +19,27 @@ registerRoute("food", food.render);
 registerRoute("workout", workout.render);
 registerRoute("profile", profile.render);
 
+function setHash(route: Route): void {
+  const target = `#/${route}`;
+  if (window.location.hash !== target) {
+    // Replace history entry so back-button doesn't revisit transient routes.
+    window.history.replaceState(null, "", target);
+  }
+}
+
 async function boot(): Promise<void> {
   const me = await fetchMe();
-  if (!me) { navigate("login"); return; }
-  if (me.must_change_password) { navigate("change-password"); return; }
-  if (!hasDek()) {
-    // Session cookie valid but DEK is gone (new tab / page reload cleared it).
-    // User must re-enter password to re-derive DEK.
-    navigate("login");
-    return;
+  if (!me) {
+    setHash("login");
+  } else if (me.must_change_password) {
+    setHash("change-password");
+  } else if (!hasDek()) {
+    // Session valid but DEK gone (fresh tab / reload cleared sessionStorage).
+    // Can't decrypt anything — must re-enter password to re-derive DEK.
+    setHash("login");
+  } else if (!window.location.hash || window.location.hash === "#/" || window.location.hash === "#") {
+    setHash("home");
   }
-  if (!window.location.hash) navigate("home");
   start();
 }
 
