@@ -884,3 +884,8 @@ button:focus-visible,
 @media (prefers-reduced-motion: reduce) {
     .page-enter, .page-enter-left, .page-enter-right { animation: none; }
 }
+
+#app {
+    will-change: transform;
+    touch-action: pan-y;
+}
