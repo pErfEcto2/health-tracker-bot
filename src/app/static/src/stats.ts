@@ -2,14 +2,21 @@
 
 import type { ActivityLevel, FoodEntryPayload, Gender, MeasurementPayload, ProfilePayload, WaterEntryPayload } from "./types";
 
+function formatLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return formatLocal(new Date());
 }
 
 export function isoDaysAgo(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return formatLocal(d);
 }
 
 export interface MacroTotals {

@@ -6,11 +6,12 @@ export type Route =
   | "home"
   | "food"
   | "workout"
+  | "journal"
   | "profile";
 
 export const Routes: Route[] = [
   "login", "recover", "change-password", "setup",
-  "home", "food", "workout", "profile",
+  "home", "food", "workout", "journal", "profile",
 ];
 
 export type RouteHandler = () => void | Promise<void>;

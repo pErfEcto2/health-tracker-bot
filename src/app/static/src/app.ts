@@ -13,6 +13,7 @@ import * as setup from "./pages/setup";
 import * as home from "./pages/home";
 import * as food from "./pages/food";
 import * as workout from "./pages/workout";
+import * as journal from "./pages/journal";
 import * as profile from "./pages/profile";
 
 registerRoute("login", login.render);
@@ -22,6 +23,7 @@ registerRoute("setup", setup.render);
 registerRoute("home", home.render);
 registerRoute("food", food.render);
 registerRoute("workout", workout.render);
+registerRoute("journal", journal.render);
 registerRoute("profile", profile.render);
 
 function setHash(route: Route): void {
