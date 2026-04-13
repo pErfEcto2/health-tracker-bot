@@ -151,6 +151,7 @@ async def delete_account(
 async def logout(
     request: Request,
     response: Response,
+    _user: User = Depends(get_current_user_allow_must_change),
     db: AsyncSession = Depends(get_db),
 ):
     token = request.cookies.get(SESSION_COOKIE)
