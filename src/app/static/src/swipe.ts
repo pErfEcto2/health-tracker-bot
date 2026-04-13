@@ -46,8 +46,11 @@ export function installSwipeNav(getActive: () => Route): void {
     const active = getActive();
     const i = NAV_ORDER.indexOf(active);
     if (i < 0) return;
-    const next = dx < 0 ? i + 1 : i - 1;
+    const swipingLeft = dx < 0;
+    const next = swipingLeft ? i + 1 : i - 1;
     if (next < 0 || next >= NAV_ORDER.length) return;
+    // Swiping left pulls the next page in from the right; swiping right pulls prev from the left.
+    document.documentElement.dataset.navDir = swipingLeft ? "left" : "right";
     navigate(NAV_ORDER[next]!);
   }, { passive: true });
 }

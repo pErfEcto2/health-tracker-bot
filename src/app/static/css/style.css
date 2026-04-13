@@ -862,3 +862,25 @@ button:focus-visible,
     padding: 0;
     line-height: 1;
 }
+
+/* Page transitions */
+.page-enter { animation: pageFade 0.18s ease both; }
+.page-enter-left { animation: pageSlideLeft 0.22s ease both; }
+.page-enter-right { animation: pageSlideRight 0.22s ease both; }
+
+@keyframes pageFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes pageSlideLeft {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes pageSlideRight {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-enter, .page-enter-left, .page-enter-right { animation: none; }
+}
