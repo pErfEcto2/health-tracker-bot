@@ -61,6 +61,11 @@ export function genderLabel(g: Gender | undefined): string {
   return "—";
 }
 
+export function isProfileComplete(p: ProfilePayload | undefined): boolean {
+  if (!p) return false;
+  return !!(p.gender && p.weight_kg && p.height_cm && p.birth_date && p.activity_level);
+}
+
 export function activityLabel(a: ActivityLevel | undefined): string {
   switch (a) {
     case "sedentary": return "Sedentary";

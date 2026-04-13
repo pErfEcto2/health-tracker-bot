@@ -2,13 +2,14 @@ export type Route =
   | "login"
   | "recover"
   | "change-password"
+  | "setup"
   | "home"
   | "food"
   | "workout"
   | "profile";
 
 export const Routes: Route[] = [
-  "login", "recover", "change-password",
+  "login", "recover", "change-password", "setup",
   "home", "food", "workout", "profile",
 ];
 
