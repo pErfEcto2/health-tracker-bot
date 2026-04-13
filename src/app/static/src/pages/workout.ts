@@ -1,4 +1,5 @@
 import { api } from "../api";
+import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
 import { bottomNavHtml, wireNav } from "../nav";
 import { createRecord, deleteRecord, listRecords, updateRecord } from "../records";
@@ -34,7 +35,7 @@ export async function render(): Promise<void> {
     <div class="shell">
       <header class="shell-header">
         <h1>Тренировки</h1>
-        <input type="date" id="wk-date" value="${currentDate}" class="date-input">
+        ${dayNavHtml("wk-date", currentDate)}
       </header>
 
       <button id="new-workout-btn" class="primary-btn">+ Новая тренировка</button>
@@ -47,11 +48,7 @@ export async function render(): Promise<void> {
   `);
 
   wireNav();
-
-  ($("#wk-date") as HTMLInputElement).addEventListener("change", (e) => {
-    currentDate = (e.target as HTMLInputElement).value;
-    void render();
-  });
+  wireDayNav("wk-date", currentDate, (d) => { currentDate = d; void render(); });
 
   $("#new-workout-btn").addEventListener("click", async () => {
     try {

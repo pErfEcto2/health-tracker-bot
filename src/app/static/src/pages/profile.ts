@@ -1,4 +1,5 @@
 import { deleteAccount, logout } from "../auth";
+import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
 import { bottomNavHtml, wireNav } from "../nav";
 import { createRecord, deleteRecord, listRecords, loadProfile, updateRecord } from "../records";
@@ -49,7 +50,7 @@ export async function render(): Promise<void> {
       <div class="card">
         <div class="card-header">
           <h2>Журнал</h2>
-          <input type="date" id="prof-date" value="${currentDate}" class="date-input">
+          ${dayNavHtml("prof-date", currentDate)}
         </div>
         <p class="hint">Замеры и вода за выбранный день</p>
       </div>
@@ -88,11 +89,7 @@ export async function render(): Promise<void> {
   `);
 
   wireNav();
-
-  ($("#prof-date") as HTMLInputElement).addEventListener("change", (e) => {
-    currentDate = (e.target as HTMLInputElement).value;
-    void render();
-  });
+  wireDayNav("prof-date", currentDate, (d) => { currentDate = d; void render(); });
 
   $("#logout-btn").addEventListener("click", async () => {
     await logout();

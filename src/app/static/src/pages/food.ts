@@ -1,4 +1,5 @@
 import { api } from "../api";
+import { dayNavHtml, wireDayNav } from "../datepicker";
 import { closeModal, openModal } from "../modal";
 import { bottomNavHtml, wireNav } from "../nav";
 import { createRecord, deleteRecord, listRecords } from "../records";
@@ -7,7 +8,7 @@ import { hasDek } from "../session";
 import { sumFood, today } from "../stats";
 import type { DecryptedRecord } from "../records";
 import type { FoodEntryPayload, FoodSearchItem, MealType } from "../types";
-import { $, escapeHtml, mount, toast } from "../ui";
+import { escapeHtml, mount, toast } from "../ui";
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: "Завтрак",
@@ -30,7 +31,7 @@ export async function render(): Promise<void> {
     <div class="shell">
       <header class="shell-header">
         <h1>Питание</h1>
-        <input type="date" id="food-date" value="${currentDate}" class="date-input">
+        ${dayNavHtml("food-date", currentDate)}
       </header>
 
       <div class="card">
@@ -49,11 +50,7 @@ export async function render(): Promise<void> {
   `);
 
   wireNav();
-
-  ($("#food-date") as HTMLInputElement).addEventListener("change", (e) => {
-    currentDate = (e.target as HTMLInputElement).value;
-    void render();
-  });
+  wireDayNav("food-date", currentDate, (d) => { currentDate = d; void render(); });
 
   document.querySelectorAll<HTMLButtonElement>(".add-food-btn").forEach((b) => {
     b.addEventListener("click", () => openAddFoodModal(b.dataset.meal as MealType));

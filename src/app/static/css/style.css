@@ -840,3 +840,25 @@ button:focus-visible,
     font-weight: 500;
     cursor: pointer;
 }
+
+.day-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.day-nav-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--secondary-bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 20px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
