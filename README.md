@@ -1,128 +1,154 @@
 # TrackHub
 
-Telegram Mini App для трекинга здоровья: питание, тренировки, прогресс тела.
+Zero-knowledge health tracker — nutrition, workouts, body metrics. Server stores
+only ciphertext; encryption/decryption happens on the client with a key derived
+from the user's password. Accounts are admin-created (invite-only); no
+self-signup.
 
-## Стек
+Live at https://health-tracker-bot.ru.
 
-| Компонент | Технология |
-|-----------|-----------|
-| Backend | Python 3.12, FastAPI (async) |
-| Telegram бот | aiogram 3 |
-| БД | PostgreSQL 16 |
-| ORM | SQLAlchemy 2.0 (async) + Alembic |
-| Кэш | Redis 7 |
-| Frontend | Vanilla HTML/CSS/JS, Chart.js |
-| Auth | Telegram initData + HMAC-SHA256 |
-| Инфра | Docker Compose, UV, Ruff |
+## Stack
 
-## Запуск
+| Layer | Tech |
+|---|---|
+| Backend | Python 3.12, FastAPI (async), SQLAlchemy 2.0, Alembic |
+| Datastore | PostgreSQL 16, Redis 7 |
+| Auth (server-side) | Argon2id over client-derived auth key, opaque session cookie (httpOnly, SameSite=Strict, 7-day sliding), CSRF double-submit |
+| Web frontend | Vite + TypeScript, Compose-free SPA, 5-page carousel with swipe |
+| Android client | Kotlin, Jetpack Compose, Retrofit, Koin, Android Keystore + biometric |
+| Crypto (client) | PBKDF2-SHA256 600k, HKDF-SHA256 subkeys, AES-GCM (256-bit, 12-byte nonce) |
+| Telegram bot | aiogram 3 — reduced to a greeter + notification channel |
+| Infra | Docker Compose, nginx + Let's Encrypt, UFW |
+
+## Layout
+
+```
+.
+├── src/
+│   ├── app/                 # FastAPI
+│   │   ├── main.py          # app, middlewares (CSP, rate limit, CSRF), SPA fallback
+│   │   ├── config.py        # pydantic-settings
+│   │   ├── database.py      # async SQLAlchemy engine
+│   │   ├── redis.py
+│   │   ├── crypto.py        # argon2 + PBKDF2/HKDF helpers (admin CLI side)
+│   │   ├── dependencies.py  # session+CSRF FastAPI deps
+│   │   ├── admin.py         # CLI: create/list/delete/reset users
+│   │   ├── models/          # User, Session, Record, Exercise (SQLAlchemy)
+│   │   ├── schemas/         # Pydantic request/response models
+│   │   ├── api/             # /api/v1/auth, /records, /exercises, /food-search, /debug
+│   │   ├── services/        # food-db helpers
+│   │   └── static/          # Vite+TS project (served built from dist/)
+│   ├── bot/                 # aiogram 3 entrypoint + notify helper
+│   └── alembic/             # single-revision schema
+├── android/                 # Kotlin Android app (Compose, Material3)
+├── docker/                  # Dockerfile.web_server, Dockerfile.tg_bot, docker-compose.yml
+├── TODO.md                  # feature roadmap
+└── README.md
+```
+
+## Auth & crypto model
+
+- Admin creates an account via CLI with a random temp password
+  (`python -m app.admin create-user <username>`).
+- User logs in; server returns `must_change_password=true` with no wrapped DEK.
+- User sets their own password. The client generates a 256-bit random DEK and a
+  256-bit random recovery key. Both are wrapped (AES-GCM) with keys derived from
+  the password and recovery key respectively, then uploaded to the server.
+- Server stores: salt, argon2id(auth key), wrapped DEKs. Never sees plaintext.
+- Recovery: user supplies recovery key + new password → server returns the
+  recovery-wrapped DEK → client unwraps with recovery KEK → re-wraps with new
+  password. Original encrypted records remain intact.
+- Android: DEK is wrapped a second time by a hardware-backed Android Keystore
+  key that requires `BIOMETRIC_STRONG` for every use. Unlocking the app
+  ≈ one biometric prompt per cold start.
+
+Crypto parameters are shared byte-for-byte between the web client
+(`src/app/static/src/crypto.ts`), the admin CLI (`src/app/crypto.py`) and the
+Android client (`android/app/src/main/kotlin/com/trackhub/crypto/Crypto.kt`).
+Regression fixtures are generated from the web client and exercised by the
+Android unit tests (`CryptoInteropTest`).
+
+## Running locally
 
 ```bash
-cp .env.example .env              # заполнить переменные
-docker compose -f docker/docker-compose.yml --env-file .env up --build -d
+cp .env.example .env            # fill: POSTGRES_PASSWORD, REDIS_PASSWORD,
+                                #       SECRET_KEY, TELEGRAM_BOT_TOKEN, MINIAPP_URL
+make up                         # docker compose up -d --build
 ```
 
-Миграции (внутри контейнера):
+Migrations and admin commands run in the web container:
+
 ```bash
-docker compose -f docker/docker-compose.yml --env-file .env exec web uv run alembic upgrade head
+docker compose -f docker/docker-compose.yml --env-file .env run --rm web \
+    /app/.venv/bin/alembic upgrade head
+
+docker compose -f docker/docker-compose.yml --env-file .env exec web \
+    /app/.venv/bin/python -m app.admin create-user alice
 ```
 
-Логи:
+Frontend dev (hot reload):
+
 ```bash
-docker compose -f docker/docker-compose.yml --env-file .env logs -f
+cd src/app/static
+npm ci
+npm run dev          # Vite on http://localhost:5173, proxies /api to :3000
 ```
 
-Остановка:
+## Android
+
+Open `android/` in Android Studio (Hedgehog+) or use the CLI:
+
 ```bash
-docker compose -f docker/docker-compose.yml --env-file .env down
+cd android
+./gradlew testDebugUnitTest     # crypto interop vs web fixtures
+./gradlew assembleDebug         # APK in app/build/outputs/apk/debug/
 ```
 
-Приложение доступно на `http://localhost:3000`.
-
-## Структура
-
-```
-src/
-├── app/                    # FastAPI приложение
-│   ├── main.py             # App factory, middleware, lifespan
-│   ├── config.py           # Pydantic Settings
-│   ├── database.py         # Async SQLAlchemy engine
-│   ├── redis.py            # Redis connection pool
-│   ├── security.py         # Telegram initData HMAC валидация
-│   ├── dependencies.py     # FastAPI dependencies (auth, db)
-│   ├── models/             # SQLAlchemy модели
-│   ├── schemas/            # Pydantic schemas
-│   ├── api/                # API роуты (/api/v1/*)
-│   ├── services/           # Бизнес-логика, TDEE, статистика
-│   └── static/             # Mini App frontend (HTML/CSS/JS)
-├── bot/                    # aiogram 3 бот
-│   ├── main.py             # Точка входа, polling
-│   └── handlers/           # Обработчики команд
-└── alembic/                # Миграции БД
-```
-
-## Возможности
-
-### Реализовано
-
-- [x] Личный профиль (пол, вес, рост, дата рождения, уровень активности)
-- [x] TDEE и BMR (Mifflin-St Jeor) с прогресс-барами на главной
-- [x] Трекер калорий и КБЖУ (логирование еды, 3 режима ввода)
-- [x] Поиск продуктов (встроенная база ~100 продуктов + OpenFoodFacts API)
-- [x] Кэширование поиска в Redis (24 часа)
-- [x] Трекер тренировок (сессии, подходы, повторы, веса)
-- [x] Трекер воды (быстрые кнопки 150/250/330/500 мл, прогресс-бар, норма 2л)
-- [x] Замеры тела (вес, талия, бицепс, бёдра, грудь)
-- [x] Графики (Chart.js): калории, БЖУ, вес, замеры, прогресс упражнений, частота тренировок, вода
-- [x] Telegram initData HMAC-SHA256 аутентификация
-- [x] Rate limiting (Redis, 100 req/min)
-- [x] Адаптивная тема (light/dark из Telegram + prefers-color-scheme)
-- [x] DEV_MODE для локального тестирования без Telegram
-
-### TODO
-
-- [ ] Шаблоны и чеклисты тренировок (готовые программы на день)
-- [ ] Общая база знаний (техника упражнений, питание)
-- [ ] Личная база знаний (заметки пользователя)
-- [ ] Таймер отдыха между подходами
-- [ ] Напоминания через бота (еда, тренировки, вода)
-- [ ] Прогресс-фото (загрузка фото с привязкой к дате)
-- [ ] Стрики (серия дней без пропуска)
-- [ ] HTTPS + домен (сейчас localhost)
+`minSdk=30` (Android 11+), `targetSdk=35`, ABI filter `arm64-v8a` only.
 
 ## API
 
-Swagger: `http://localhost:3000/docs`
+All routes live under `/api/v1/`. Auth is via opaque session cookie + CSRF
+header (`X-CSRF-Token` on POST/PUT/DELETE). Swagger is disabled in production.
 
-Все эндпоинты под `/api/v1/`, требуют заголовок `X-Telegram-Init-Data` (кроме DEV_MODE).
-
-| Группа | Эндпоинты |
-|--------|-----------|
-| Auth | `POST /auth/validate` |
-| Профиль | `GET/PUT /profile`, `GET /profile/tdee` |
-| Питание | `GET/POST /food`, `DELETE /food/{id}`, `GET /food/summary` |
-| Поиск | `GET /food-search?q=...` |
-| Тренировки | `GET/POST /workouts`, `GET/DELETE /workouts/{id}`, `POST /workouts/{id}/sets` |
-| Упражнения | `GET /exercises` |
-| Вода | `GET/POST /water`, `DELETE /water/{id}`, `GET /water/summary` |
-| Замеры | `GET/POST /measurements` |
-| Статистика | `GET /stats/calories\|macros\|weight\|exercise/{id}\|workouts\|measurements\|water` |
+| Group | Endpoints |
+|---|---|
+| Auth | `POST /auth/salt`, `/login`, `/logout`, `/change-password`, `/recover-start`, `/recover-complete`; `GET /auth/me`; `DELETE /auth/account` |
+| Records (encrypted) | `GET/POST /records`, `GET/PUT/DELETE /records/{id}` |
+| Plaintext catalogs | `GET /exercises`, `GET /food-search?q=` |
 | Debug | `GET /debug/health` |
 
-## Docker контейнеры
+Record payloads are stored as ciphertext blobs with a plaintext `type` and
+`record_date` for filtering.
 
-| Сервис | Образ | Порт |
-|--------|-------|------|
-| web | python:3.12-slim + uv | 3000 |
-| bot | python:3.12-slim + uv | — |
-| db | postgres:16-alpine | 5432 |
-| redis | redis:7-alpine | 6379 |
+## Security posture
 
-## Безопасность
+- Strict CSP (no `unsafe-inline`), HSTS preload, `frame-ancestors 'none'`,
+  `referrer-policy`, `permissions-policy`, `X-Frame-Options: DENY`.
+- CSRF double-submit on all state-changing endpoints (including `/auth/logout`).
+- Per-endpoint rate limits: 5/min for `/auth/login`, 3/hour for recovery, 100/min global.
+- Argon2id over client-derived auth keys (server-side replay protection even if
+  DB leaks).
+- Android keystore + biometric-bound DEK wrap; `android:allowBackup="false"`;
+  backup-rules exclude all data; network-security-config forbids cleartext.
+- UFW on server, only 22/80/443 open.
 
-- Telegram initData HMAC-SHA256 на каждый API запрос
-- Rate limiting через Redis (100 req/min)
-- Pydantic валидация всех входных данных
-- Параметризованные SQL запросы (SQLAlchemy)
-- Security headers (X-Content-Type-Options, X-XSS-Protection)
-- Секреты через переменные окружения (SecretStr)
+## Threat model
+
+- **Server operator / DB breach**: can read only ciphertext + metadata
+  (usernames, record types, dates, sizes, timestamps).
+- **Stolen device (locked)**: Android DEK is bound to biometric in hardware
+  keystore; cannot be used without biometric auth.
+- **Forgotten password**: recoverable only with recovery key shown once at first
+  login. Lost both → data permanently unreadable (by design).
+- **Compromised server delivering malicious JS/APK**: fundamentally not
+  defendable without out-of-band signing. Users must trust the maintainer.
+
+## Infra
+
+One server behind nginx + Let's Encrypt at `health-tracker-bot.ru`. Docker
+Compose brings up `web` (FastAPI + built frontend), `bot` (aiogram), `db`
+(Postgres), `redis`. See `docker/docker-compose.yml`.
+
+See `TODO.md` for roadmap (web polish, Android phase 3 UI, home-screen widgets,
+reminders via the bot).
