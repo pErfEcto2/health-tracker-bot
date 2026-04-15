@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.trackhub.crypto.Crypto
@@ -19,10 +20,11 @@ import kotlin.coroutines.resumeWithException
 /**
  * Hardware-backed wrapping of the data encryption key (DEK).
  *
- * - Wrap key lives in Android Keystore alias "trackhub_dek_wrap".
- * - It is bound to user authentication (biometric/credential) so unwrapping
- *   requires the device to be unlocked + a biometric prompt.
- * - Wrapped DEK + nonce stored in encrypted prefs ("trackhub_dek").
+ * - Wrap key alias `trackhub_dek_wrap` lives in Android Keystore, requires
+ *   BIOMETRIC_STRONG for every operation (no auth-validity timeout).
+ * - Wrapped DEK + nonce are stored in EncryptedSharedPreferences.
+ * - Each persist or unlock requires a `BiometricPrompt` with the cipher as
+ *   CryptoObject — the auth is bound to the specific cipher instance.
  *
  * In-memory cache (volatile) holds the unwrapped DEK between unwrap and clear.
  */
@@ -33,53 +35,58 @@ class DekManager(private val context: Context) {
     @Volatile private var cached: ByteArray? = null
 
     fun hasWrappedDek(): Boolean = prefs.contains(KEY_WRAPPED) && prefs.contains(KEY_NONCE)
-
     fun hasMemoryDek(): Boolean = cached != null
-
     fun memoryDek(): ByteArray? = cached
 
-    fun setDekFromUnlock(dek: ByteArray) {
-        cached = dek
-    }
+    fun setDekFromUnlock(dek: ByteArray) { cached = dek }
 
     fun clear() {
         cached = null
         prefs.edit().clear().apply()
-        // Remove the wrap key too; next set will recreate.
         runCatching {
             val ks = KeyStore.getInstance(KEYSTORE).apply { load(null) }
             ks.deleteEntry(WRAP_ALIAS)
         }
     }
 
-    /**
-     * Persist `dek` so it can be unlocked later by biometric prompt. Uses
-     * the wrap key (creating it if absent) to encrypt with AES-GCM.
-     */
-    fun persist(dek: ByteArray) {
-        cached = dek
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateWrapKey())
-        val ct = cipher.doFinal(dek)
-        prefs.edit()
-            .putString(KEY_WRAPPED, Crypto.toHex(ct))
-            .putString(KEY_NONCE, Crypto.toHex(cipher.iv))
-            .apply()
+    fun canUseBiometric(): Boolean {
+        val mgr = BiometricManager.from(context)
+        return mgr.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
+            BiometricManager.BIOMETRIC_SUCCESS
     }
 
-    /**
-     * Show a biometric prompt; on success, unwrap and cache the DEK in memory.
-     * Throws on user cancel or auth failure.
-     */
-    suspend fun unlockWithBiometric(activity: FragmentActivity, title: String, subtitle: String): ByteArray {
+    /** Persist the in-memory DEK with a biometric-bound encrypt cipher. */
+    suspend fun persistWithBiometric(activity: FragmentActivity, dek: ByteArray) {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateWrapKey())
+        val authed = promptBiometric(
+            activity = activity,
+            title = "Запомнить ключ",
+            subtitle = "Подтверди отпечатком, чтобы сохранить",
+            crypto = BiometricPrompt.CryptoObject(cipher),
+        )
+        val ct = authed.doFinal(dek)
+        prefs.edit()
+            .putString(KEY_WRAPPED, Crypto.toHex(ct))
+            .putString(KEY_NONCE, Crypto.toHex(authed.iv))
+            .apply()
+        cached = dek
+    }
+
+    /** Show biometric prompt; on success unlock and cache the DEK in memory. */
+    suspend fun unlockWithBiometric(activity: FragmentActivity): ByteArray {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         val nonce = Crypto.fromHex(prefs.getString(KEY_NONCE, null) ?: error("no wrapped DEK"))
         cipher.init(Cipher.DECRYPT_MODE, getWrapKey(), GCMParameterSpec(128, nonce))
 
-        val crypto = BiometricPrompt.CryptoObject(cipher)
-        val authedCipher = promptBiometric(activity, title, subtitle, crypto)
+        val authed = promptBiometric(
+            activity = activity,
+            title = "Войти в TrackHub",
+            subtitle = "Подтверди отпечатком",
+            crypto = BiometricPrompt.CryptoObject(cipher),
+        )
         val ct = Crypto.fromHex(prefs.getString(KEY_WRAPPED, null) ?: error("no wrapped DEK"))
-        val dek = authedCipher.doFinal(ct)
+        val dek = authed.doFinal(ct)
         cached = dek
         return dek
     }
@@ -100,16 +107,12 @@ class DekManager(private val context: Context) {
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 cont.resumeWithException(BiometricException(errorCode, errString.toString()))
             }
-            override fun onAuthenticationFailed() {
-                // Soft failure — let user retry; do not resume the continuation.
-            }
+            override fun onAuthenticationFailed() { /* soft fail; let user retry */ }
         })
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-            .setAllowedAuthenticators(
-                androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG,
-            )
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .setNegativeButtonText("Отмена")
             .build()
         prompt.authenticate(info, crypto)

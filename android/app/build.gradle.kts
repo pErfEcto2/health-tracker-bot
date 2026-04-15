@@ -16,6 +16,10 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            // Only ship 64-bit ARM. minSdk 30 → all targeted devices are arm64-v8a.
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     buildTypes {
