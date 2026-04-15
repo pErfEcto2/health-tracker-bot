@@ -1,0 +1,45 @@
+{
+  "pbkdf2": {
+    "password": "MyStrongPassword1!",
+    "salt_hex": "0102030405060708090a0b0c0d0e0f10",
+    "iterations": 600000,
+    "len": 32,
+    "expected_hex": "e5fe8467b89bbe176deff1dffb68cb83672e4f56744fd83e0ff17239c95869b8"
+  },
+  "hkdf_auth": {
+    "ikm_hex": "e5fe8467b89bbe176deff1dffb68cb83672e4f56744fd83e0ff17239c95869b8",
+    "info": "trackhub-auth",
+    "len": 32,
+    "expected_hex": "d130ce794d30c5b4464fa477acde2410b4c65232eed4b9390a94d54ea235cb5d"
+  },
+  "hkdf_enc": {
+    "ikm_hex": "e5fe8467b89bbe176deff1dffb68cb83672e4f56744fd83e0ff17239c95869b8",
+    "info": "trackhub-enc",
+    "len": 32,
+    "expected_hex": "ba3734ccddad9f5c6c8e763d808658ce57b47931c721023c3d4c6562be5043ab"
+  },
+  "hkdf_recovery": {
+    "ikm_hex": "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100",
+    "info": "trackhub-recovery",
+    "len": 32,
+    "expected_hex": "387c20d81ff08085e39d3e9e9cac020e839bf2edd8e0b7f07ca7512b36ade929"
+  },
+  "hkdf_recovery_auth": {
+    "ikm_hex": "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100",
+    "info": "trackhub-recovery-auth",
+    "len": 32,
+    "expected_hex": "a85779ba6eed34459a63052909f82a28c79d1cbc445c8f9999b511137793748f"
+  },
+  "aes_gcm_wrap_dek": {
+    "key_hex": "ba3734ccddad9f5c6c8e763d808658ce57b47931c721023c3d4c6562be5043ab",
+    "nonce_hex": "a1a2a3a4a5a6a7a8a9aaabac",
+    "plaintext_hex": "1112131415161718192021222324252627282930313233343536373839404142",
+    "expected_ciphertext_hex": "3263743687efbf2f80445760d61906d3ca74eb19a1ca8c81a32af02c901bdf3bb0cf9c5888bfbadf344e1afd05406017"
+  },
+  "aes_gcm_record": {
+    "key_hex": "1112131415161718192021222324252627282930313233343536373839404142",
+    "nonce_hex": "a1a2a3a4a5a6a7a8a9aaabac",
+    "plaintext_utf8": "{\"name\":\"Apple\",\"calories\":52,\"protein_g\":0.3,\"fat_g\":0.2,\"carbs_g\":14,\"grams\":100,\"meal_type\":\"breakfast\",\"logged_at\":\"2026-04-13T08:00:00Z\"}",
+    "expected_ciphertext_hex": "713e6bc7773dbf5d38e51784b0c7f95441ff87a7ef2fdfbbdb280a3b0788baa9514e4a8208ed806e7cc3d21ff6026cf0b4d0235a43dd3b05ed676c30f6c6ce447d393366ef20f48312326f6e229081d29600ae74c3572948f588cf3b3dacd0d00840eaaedf5115652f39d237d6827e5417d3e681babdf075ce46883bf42c30abc89824f72909c313809ab3150196800609ea13e24edcd6ddfc7e9d3b6452"
+  }
+}
