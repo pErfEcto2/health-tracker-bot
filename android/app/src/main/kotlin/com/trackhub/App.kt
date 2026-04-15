@@ -9,13 +9,17 @@ import com.trackhub.data.RecordsRepository
 import com.trackhub.session.DekManager
 import com.trackhub.session.SessionStore
 import com.trackhub.ui.AppBootViewModel
-import com.trackhub.ui.PlaceholderHomeViewModel
 import com.trackhub.ui.auth.BiometricUnlockViewModel
 import com.trackhub.ui.auth.ChangePasswordViewModel
 import com.trackhub.ui.auth.EnrollBiometricViewModel
 import com.trackhub.ui.auth.LoginViewModel
 import com.trackhub.ui.auth.RecoveryViewModel
 import com.trackhub.ui.auth.SetupViewModel
+import com.trackhub.ui.food.FoodViewModel
+import com.trackhub.ui.home.HomeViewModel
+import com.trackhub.ui.journal.JournalViewModel
+import com.trackhub.ui.profile.ProfileViewModel
+import com.trackhub.ui.workout.WorkoutViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
@@ -45,5 +49,10 @@ val appModule = module {
     viewModel { SetupViewModel() }
     viewModel { BiometricUnlockViewModel() }
     viewModel { EnrollBiometricViewModel() }
-    viewModel { PlaceholderHomeViewModel() }
+
+    viewModel { HomeViewModel() }
+    viewModel { FoodViewModel() }
+    viewModel { WorkoutViewModel() }
+    viewModel { JournalViewModel() }
+    viewModel { ProfileViewModel() }
 }

@@ -21,6 +21,7 @@ import com.trackhub.ui.auth.EnrollBiometricScreen
 import com.trackhub.ui.auth.LoginScreen
 import com.trackhub.ui.auth.RecoveryScreen
 import com.trackhub.ui.auth.SetupScreen
+import com.trackhub.ui.nav.MainScaffold
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -193,7 +194,7 @@ fun AppNavGraph(
         }
 
         composable(Routes.HOME) {
-            PlaceholderHome(onLoggedOut = { nav.navigateAndClear(Routes.LOGIN) })
+            MainScaffold(onLoggedOut = { nav.navigateAndClear(Routes.LOGIN) })
         }
     }
 }
