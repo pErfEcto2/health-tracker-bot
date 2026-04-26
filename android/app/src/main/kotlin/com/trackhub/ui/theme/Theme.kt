@@ -6,24 +6,34 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
+// Material3 mapping mirrors web:
+//   background    = body bg     (--secondary-bg)
+//   surface       = card bg     (--bg / --section-bg)
+//   surfaceVariant= chip bg     (--secondary-bg, blends with body, pops on cards)
 private val Light = lightColorScheme(
     primary = Brand,
-    background = BgLight,
-    surface = BgLight,
-    surfaceVariant = SecondaryBgLight,
+    onPrimary = BgLight,
+    background = SecondaryBgLight,
     onBackground = TextLight,
+    surface = BgLight,
     onSurface = TextLight,
+    surfaceVariant = SecondaryBgLight,
+    onSurfaceVariant = TextLight,
     error = Destructive,
+    onError = BgLight,
 )
 
 private val Dark = darkColorScheme(
     primary = BrandDark,
-    background = BgDark,
-    surface = BgDark,
-    surfaceVariant = SecondaryBgDark,
+    onPrimary = BgLight,
+    background = SecondaryBgDark,
     onBackground = TextDark,
+    surface = BgDark,
     onSurface = TextDark,
-    error = Destructive,
+    surfaceVariant = SecondaryBgDark,
+    onSurfaceVariant = TextDark,
+    error = DestructiveDark,
+    onError = BgDark,
 )
 
 @Composable

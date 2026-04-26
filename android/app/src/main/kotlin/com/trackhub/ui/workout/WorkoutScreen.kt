@@ -151,7 +151,7 @@ private fun SessionCard(
                         sets.forEach { s ->
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surface,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
                             ) {
                                 Text(
                                     "${s.reps}×${s.weightKg.toInt()}кг",

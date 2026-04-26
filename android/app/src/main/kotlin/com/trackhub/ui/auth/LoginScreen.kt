@@ -22,11 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trackhub.data.AuthRepository
+import com.trackhub.ui.common.rememberPasswordAutofill
+import com.trackhub.ui.common.rememberUsernameAutofill
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -104,15 +107,19 @@ fun LoginScreen(
             modifier = Modifier.padding(top = 16.dp, bottom = 24.dp),
         )
 
+        val usernameAutofill = rememberUsernameAutofill { username = it }
+        val passwordAutofill = rememberPasswordAutofill { password = it }
+
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
             label = { Text("Имя пользователя") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(usernameAutofill),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
                 autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Email,
             ),
         )
         OutlinedTextField(
@@ -121,7 +128,11 @@ fun LoginScreen(
             label = { Text("Пароль") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp).then(passwordAutofill),
         )
 
         Button(

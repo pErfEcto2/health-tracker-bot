@@ -39,7 +39,8 @@ fun SectionCard(
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             if (title != null || trailing != null) {
